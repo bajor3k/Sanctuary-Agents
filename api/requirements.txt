@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+pdfplumber
+scikit-learn
+numpy
+pydantic
+python-multipart
+google-cloud-storage
+
+openpyxl
+
+google-generativeai
+
+python-dotenv

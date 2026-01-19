@@ -1,0 +1,50 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Ticket {
+  id              String            @id @default(cuid())
+  title           String
+  description     String?
+  status          String            @default("Open") // Open, Awaiting Input, Action Required, Completed, Closed
+  priority        String            @default("Medium") // Low, Medium, High
+  clientName      String?
+  accountNumber   String?
+  household       String?
+  assignedTeam    String            @default("Unassigned")
+  owner           String?           @default("N/A")
+  creator         String            @default("You")
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  
+  transferHistory TransferHistory[]
+  activityLog     Activity[]
+}
+
+model TransferHistory {
+  id        String   @id @default(cuid())
+  ticketId  String
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  fromTeam  String
+  toTeam    String
+  reason    String?
+  timestamp DateTime @default(now())
+}
+
+model Activity {
+  id          String   @id @default(cuid())
+  ticketId    String
+  ticket      Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author      String
+  message     String
+  type        String   // status_change, transfer, note, reply
+  timestamp   DateTime @default(now())
+}
