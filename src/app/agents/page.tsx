@@ -12,7 +12,7 @@ export default function AgentsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
                     {/* Advisory Agent */}
-                    <Link href="/agents/advisory" className="group block p-6 rounded-3xl border border-border bg-card hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-all duration-300">
+                    <Link href="/orion/advisory" className="group block p-6 rounded-3xl border border-border bg-card hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-all duration-300">
                         <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 mb-4 group-hover:scale-110 transition-transform">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><path d="M16 13H8" /><path d="M16 17H8" /><path d="M10 9H8" /></svg>
                         </div>
@@ -30,7 +30,7 @@ export default function AgentsPage() {
                     </Link>
 
                     {/* Margin Agent */}
-                    <Link href="/agents/margin" className="group block p-6 rounded-3xl border border-border bg-card hover:border-orange-500/50 hover:bg-orange-500/5 transition-all duration-300">
+                    <Link href="/advisor-services/margin" className="group block p-6 rounded-3xl border border-border bg-card hover:border-orange-500/50 hover:bg-orange-500/5 transition-all duration-300">
                         <div className="w-12 h-12 rounded-2xl bg-orange-500/10 flex items-center justify-center text-orange-500 mb-4 group-hover:scale-110 transition-transform">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7" /><polyline points="16 17 22 17 22 11" /></svg>
                         </div>

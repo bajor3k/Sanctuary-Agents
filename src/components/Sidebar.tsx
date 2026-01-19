@@ -6,15 +6,20 @@ import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
   ChevronDown, ChevronUp, FileStack,
-  Sparkles, KanbanSquare, ChevronLeft, ChevronRight, Briefcase, Wallet, Settings, TrendingUp, BarChart3, ShieldAlert, Bot, Building2, Brain,
+  Sparkles, KanbanSquare, ChevronLeft, ChevronRight, Briefcase, Wallet, Settings, TrendingUp, BarChart3, ShieldAlert, Bot, Building2,
+  Snowflake,
+  LayoutGrid, Brain, Repeat,
 } from "lucide-react";
 import { navigationData } from "@/lib/navigation-data";
 import { type NavItem } from "@/contexts/navigation-context";
 import { cn } from "@/lib/utils";
 
-export type SectionKey = "agents" | "kanban" | "advisor-services" | "managed-accounts" | "asset-movement" | "principal-review" | "compliance" | "direct-business";
+// Keep Dashboard in SectionKey for state if needed, but we might not need it in the Section component list anymore
+export type SectionKey = "dashboard" | "orion" | "kanban" | "advisor-services" | "managed-accounts" | "asset-movement" | "principal-review" | "compliance" | "direct-business" | "transitions";
 
-const agentsItems: NavItem[] = navigationData['Agents'];
+const dashboardItems: NavItem[] = navigationData['Dashboard'];
+
+const orionItems: NavItem[] = navigationData['Orion'];
 const kanbanItems: NavItem[] = navigationData['Kanban'];
 const advisorServicesItems: NavItem[] = navigationData['Advisor Services'];
 const managedAccountsItems: NavItem[] = navigationData['Managed Accounts'];
@@ -22,6 +27,7 @@ const assetMovementItems: NavItem[] = navigationData['Asset Movement'];
 const principalReviewItems: NavItem[] = navigationData['Principal Review'];
 const complianceItems: NavItem[] = navigationData['Compliance'];
 const directBusinessItems: NavItem[] = navigationData['Direct Business'];
+const transitionsItems: NavItem[] = navigationData['Transitions'];
 
 
 
@@ -81,7 +87,8 @@ export default function Sidebar({
 
 
   // Sections
-  const [openAgents, setOpenAgents] = useState(false);
+  const [openDashboard, setOpenDashboard] = useState(false);
+  const [openOrion, setOpenOrion] = useState(false);
   const [openKanban, setOpenKanban] = useState(false);
   const [openAdvisorServices, setOpenAdvisorServices] = useState(false);
   const [openManagedAccounts, setOpenManagedAccounts] = useState(false);
@@ -89,11 +96,13 @@ export default function Sidebar({
   const [openPrincipalReview, setOpenPrincipalReview] = useState(false);
   const [openCompliance, setOpenCompliance] = useState(false);
   const [openDirectBusiness, setOpenDirectBusiness] = useState(false);
+  const [openTransitions, setOpenTransitions] = useState(false);
 
   // When parent asks to open a specific section (after expanding)
   useEffect(() => {
     if (!forceOpen) return;
-    setOpenAgents(forceOpen === "agents");
+    setOpenDashboard(forceOpen === "dashboard");
+    setOpenOrion(forceOpen === "orion");
     setOpenKanban(forceOpen === "kanban");
     setOpenAdvisorServices(forceOpen === "advisor-services");
     setOpenManagedAccounts(forceOpen === "managed-accounts");
@@ -101,6 +110,7 @@ export default function Sidebar({
     setOpenPrincipalReview(forceOpen === "principal-review");
     setOpenCompliance(forceOpen === "compliance");
     setOpenDirectBusiness(forceOpen === "direct-business");
+    setOpenTransitions(forceOpen === "transitions");
     onForceOpenHandled?.();
   }, [forceOpen, onForceOpenHandled]);
 
@@ -115,7 +125,7 @@ export default function Sidebar({
     href,
     iconClassName
   }: {
-    keyName: SectionKey | "agents"; // Simplified type
+    keyName: SectionKey | "dashboard"; // Simplified type
     title: string; icon: any; open: boolean; setOpen: (v: boolean) => void; items: NavItem[]; href?: string; iconClassName?: string;
   }) => {
     if (!items) return null; // Guard against null/undefined items
@@ -163,13 +173,30 @@ export default function Sidebar({
   return (
     <div className="flex h-full w-full flex-col">
       <div className="flex-1 overflow-y-auto p-3 pt-2">
+        { /* Command Center - Direct Link */}
+        <Link
+          href="/dashboard"
+          className={cn(
+            "flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors mb-1",
+            pathname === "/dashboard"
+              ? "bg-sidebar-accent text-sidebar-accent-foreground"
+              : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          )}
+        >
+          <LayoutGrid className="h-5 w-5 text-[hsl(var(--icon-color-1))]" />
+          {!collapsed && <span>Dashboard</span>}
+        </Link>
+
+        {/* Separator / Margin */}
+        <div className="my-2" />
+
         <Section
-          keyName="agents"
+          keyName="orion"
           title="Orion"
           icon={Sparkles}
-          open={openAgents}
-          setOpen={setOpenAgents}
-          items={agentsItems}
+          open={openOrion}
+          setOpen={setOpenOrion}
+          items={orionItems}
           iconClassName="text-[hsl(var(--icon-color-5))]"
         />
 
@@ -231,6 +258,16 @@ export default function Sidebar({
           setOpen={setOpenDirectBusiness}
           items={directBusinessItems}
           iconClassName="text-[hsl(var(--icon-color-1))]"
+        />
+
+        <Section
+          keyName="transitions"
+          title="Transitions"
+          icon={Repeat}
+          open={openTransitions}
+          setOpen={setOpenTransitions}
+          items={transitionsItems}
+          iconClassName="text-[hsl(var(--icon-color-2))]"
         />
 
         <Section

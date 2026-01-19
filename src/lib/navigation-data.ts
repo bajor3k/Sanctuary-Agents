@@ -60,30 +60,33 @@ import {
 
 export const toolbarSections: ToolbarSection[] = [];
 
-export const navigationData: Record<'Agents' | 'Kanban' | 'Advisor Services' | 'Managed Accounts' | 'Asset Movement' | 'Principal Review' | 'Compliance' | 'Direct Business', NavItem[]> = {
-  'Agents': [
-    { name: 'Advisory', icon: FileText, href: '/agents/advisory' },
-    { name: 'PDF Generator', icon: Bot, href: '/agents/pdf-generator' },
+export const navigationData: Record<'Dashboard' | 'Orion' | 'Kanban' | 'Advisor Services' | 'Managed Accounts' | 'Asset Movement' | 'Principal Review' | 'Compliance' | 'Direct Business' | 'Transitions', NavItem[]> = {
+  'Dashboard': [
+    { name: 'Overview', icon: LayoutGrid, href: '/dashboard' }
+  ],
+  'Orion': [
+    { name: 'Advisory', icon: FileText, href: '/orion/advisory' }
   ],
   'Kanban': [],
   'Advisor Services': [
-    { name: 'Margin', icon: Percent, href: '/agents/margin' }
+    { name: 'Margin', icon: Percent, href: '/advisor-services/margin' }
   ],
   'Managed Accounts': [
-    { name: 'Advisory', icon: FileText, href: '/managed-accounts/advisory' },
-    { name: 'Fee Review', icon: BadgeDollarSign, href: '/managed-accounts/fee-review' },
-    { name: 'Frozen Report', icon: Snowflake, href: '/managed-accounts/frozen-report' }
+    { name: 'Advisory', icon: FileText, href: '/managed-accounts/advisory' }
   ],
   'Asset Movement': [
-    { name: 'Overview', icon: TrendingUp, href: '/asset-movement/overview' }
+    { name: 'Home', icon: TrendingUp, href: '/asset-movement' }
   ],
   'Principal Review': [
-    { name: 'Dashboard', icon: BarChart3, href: '/principal-review/dashboard' }
+    { name: 'Home', icon: BarChart3, href: '/principal-review' }
   ],
   'Compliance': [
-    { name: 'Overview', icon: ShieldAlert, href: '/compliance/overview' }
+    { name: 'Home', icon: ShieldAlert, href: '/compliance' }
   ],
   'Direct Business': [
-    { name: 'Overview', icon: Building2, href: '/direct-business/overview' }
+    { name: 'Home', icon: Building2, href: '/direct-business' }
+  ],
+  'Transitions': [
+    { name: 'Home', icon: Repeat, href: '/transitions' }
   ]
 };

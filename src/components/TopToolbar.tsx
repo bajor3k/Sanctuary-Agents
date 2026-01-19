@@ -3,6 +3,7 @@
 
 import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import Link from 'next/link';
 import FullscreenToggle from './chrome/FullscreenToggle';
 import { ThemeToggle } from './theme-toggle';
 import { ProfileMenu } from './ProfileMenu';
@@ -21,7 +22,8 @@ export function TopToolbar({ onToggleCollapsed, collapsed }: TopToolbarProps) {
       {/* LEFT CLUSTER - Logo & Toggle */}
       <div className="flex items-center gap-3 shrink-0">
         {/* S Logo */}
-        <div className="flex items-center justify-center shrink-0 text-foreground transition-all duration-300">
+        {/* S Logo - Click to Dashboard */}
+        <Link href="/dashboard" className="flex items-center justify-center shrink-0 text-foreground transition-all duration-300 hover:opacity-80">
           <svg
             viewBox="0 0 100 100"
             className="w-8 h-8"
@@ -40,7 +42,7 @@ export function TopToolbar({ onToggleCollapsed, collapsed }: TopToolbarProps) {
               S
             </text>
           </svg>
-        </div>
+        </Link>
 
         <button
           onClick={onToggleCollapsed}

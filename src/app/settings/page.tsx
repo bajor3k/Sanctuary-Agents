@@ -30,7 +30,7 @@ export default function DiagnosticsPage() {
         { name: "Genkit AI", status: "checking" },
     ]);
     const [apiEndpoints, setApiEndpoints] = useState<ApiEndpoint[]>([
-        { path: '/api/generate', status: 'checking' },
+
         { path: '/api/extract', status: 'checking' },
         { path: '/api/advisory-documents', status: 'checking' },
     ]);
@@ -209,9 +209,8 @@ export default function DiagnosticsPage() {
                                             {typeof value === 'boolean' ? (value ? 'Enabled' : 'Disabled') : String(value)}
                                         </p>
                                     </div>
-                                    <div className={`px-2 py-1 rounded text-xs font-medium ${
-                                        value ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'
-                                    }`}>
+                                    <div className={`px-2 py-1 rounded text-xs font-medium ${value ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'
+                                        }`}>
                                         {value ? 'ON' : 'OFF'}
                                     </div>
                                 </div>
@@ -227,9 +226,8 @@ export default function DiagnosticsPage() {
                         <div className="p-6 pt-4 space-y-3">
                             <div className="flex justify-between p-3 bg-muted/30 rounded-lg">
                                 <span className="text-sm font-medium">Environment</span>
-                                <span className={`text-sm font-semibold ${
-                                    process.env.NODE_ENV === 'production' ? 'text-green-500' : 'text-yellow-500'
-                                }`}>
+                                <span className={`text-sm font-semibold ${process.env.NODE_ENV === 'production' ? 'text-green-500' : 'text-yellow-500'
+                                    }`}>
                                     {process.env.NODE_ENV === 'production' ? 'Production (Live)' : 'Development (Local)'}
                                 </span>
                             </div>
@@ -289,25 +287,24 @@ export default function DiagnosticsPage() {
                         </Button>
                     </div>
                     <div className="p-6 pt-4">
-                    <div className="flex flex-col-reverse space-y-2 space-y-reverse max-h-[300px] overflow-y-auto font-mono text-xs">
-                        {logs.length === 0 ? (
-                            <p className="text-muted-foreground text-center py-4">No logs available</p>
-                        ) : (
-                            logs.map((log, idx) => (
-                                <div key={idx} className="flex gap-3 p-2 bg-muted/30 rounded">
-                                    <span className="text-muted-foreground">{log.timestamp.toLocaleTimeString()}</span>
-                                    <span className={`font-bold ${
-                                        log.level === 'ERROR' ? 'text-red-500' :
-                                        log.level === 'WARN' ? 'text-yellow-500' :
-                                        'text-blue-500'
-                                    }`}>
-                                        {log.level}
-                                    </span>
-                                    <span>{log.message}</span>
-                                </div>
-                            ))
-                        )}
-                    </div>
+                        <div className="flex flex-col-reverse space-y-2 space-y-reverse max-h-[300px] overflow-y-auto font-mono text-xs">
+                            {logs.length === 0 ? (
+                                <p className="text-muted-foreground text-center py-4">No logs available</p>
+                            ) : (
+                                logs.map((log, idx) => (
+                                    <div key={idx} className="flex gap-3 p-2 bg-muted/30 rounded">
+                                        <span className="text-muted-foreground">{log.timestamp.toLocaleTimeString()}</span>
+                                        <span className={`font-bold ${log.level === 'ERROR' ? 'text-red-500' :
+                                                log.level === 'WARN' ? 'text-yellow-500' :
+                                                    'text-blue-500'
+                                            }`}>
+                                            {log.level}
+                                        </span>
+                                        <span>{log.message}</span>
+                                    </div>
+                                ))
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>

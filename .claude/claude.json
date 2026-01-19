@@ -1,0 +1,12 @@
+{
+    "mcpServers": {
+        "sqlite": {
+            "command": "uvx",
+            "args": [
+                "mcp-server-sqlite",
+                "--db-path",
+                "/Users/bajor3k/Desktop/sanctuary_agents/prisma/dev.db"
+            ]
+        }
+    }
+}
