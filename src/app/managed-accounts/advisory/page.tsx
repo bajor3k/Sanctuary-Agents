@@ -4,6 +4,7 @@ import { useCallback, useState, useEffect } from 'react';
 import { CheckCircle, AlertCircle, History, FileText, CheckCircle2, XCircle, Pencil, ChevronDown, ArrowUpFromLine, RefreshCw, FileCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
+import { useAuth } from '@/contexts/auth-context';
 
 interface HistoryItem {
     id: string;
@@ -62,6 +63,7 @@ interface DetectedDocument {
 }
 
 export default function AdvisoryAgentsPage() {
+    const { accessToken } = useAuth();
     const [history, setHistory] = useState<HistoryItem[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [advisoryReviewSearchQuery, setAdvisoryReviewSearchQuery] = useState('');
@@ -84,7 +86,11 @@ export default function AdvisoryAgentsPage() {
 
         try {
             console.log('[Advisory Page] Fetching documents from API...');
-            const response = await fetch('/api/advisory-documents');
+            const response = await fetch('/api/advisory-documents', {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`
+                }
+            });
             console.log('[Advisory Page] Response status:', response.status);
 
             if (!response.ok) {
@@ -579,12 +585,28 @@ export default function AdvisoryAgentsPage() {
                                                 <div className="flex flex-col gap-1 min-w-0">
                                                     <span className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wider">PDF</span>
                                                     <button
-                                                        onClick={(e) => {
+                                                        onClick={async (e) => {
                                                             e.stopPropagation();
                                                             if (account.pdfPath) {
                                                                 // Open PDF in new tab via API endpoint
-                                                                const pdfUrl = `/api/view-pdf?path=${encodeURIComponent(account.pdfPath)}`;
-                                                                window.open(pdfUrl, '_blank');
+                                                                // Fetch PDF with auth headers then open blob URL
+                                                                try {
+                                                                    const pdfUrl = `/api/view-pdf?path=${encodeURIComponent(account.pdfPath)}`;
+                                                                    const res = await fetch(pdfUrl, {
+                                                                        headers: {
+                                                                            'Authorization': `Bearer ${accessToken}`
+                                                                        }
+                                                                    });
+                                                                    if (!res.ok) throw new Error('Failed to load PDF');
+                                                                    const blob = await res.blob();
+                                                                    const blobUrl = URL.createObjectURL(blob);
+                                                                    window.open(blobUrl, '_blank');
+                                                                    // Clean up blob URL after a delay
+                                                                    setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+                                                                } catch (err) {
+                                                                    console.error('Error opening PDF:', err);
+                                                                    alert('Failed to open PDF. Please try again.');
+                                                                }
                                                             }
                                                         }}
                                                         disabled={!account.pdfPath}

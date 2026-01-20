@@ -19,16 +19,26 @@ interface DocumentFile {
     // AI-extracted fields
     discretionary?: string;
     wrap?: string;
+    advisorName?: string;
+    repCode?: string;
     clientName?: string;
     effectiveDate?: string;
+    advReceivedDate?: string;
     clientSignedP11?: string;
-    clientDatedP11?: string;
+    clientNameP11?: string;
+    clientDateP11?: string;
+    advisorSignedP11?: string;
+    advisorNameP11?: string;
+    advisorDateP11?: string;
     accountNumber?: string;
     feeType?: string;
     feeAmount?: string;
-    advReceivedDate?: string;
     clientSignedP14?: string;
-    clientDatedP14?: string;
+    clientNameP14?: string;
+    clientDateP14?: string;
+    advisorSignedP14?: string;
+    advisorNameP14?: string;
+    advisorDateP14?: string;
 }
 
 // Cache to store AI analysis results
@@ -115,16 +125,29 @@ export async function GET() {
                             Object.assign(document, {
                                 discretionary: analysis.discretionary,
                                 wrap: analysis.wrap,
+                                advisorName: analysis.advisorName,
+                                repCode: analysis.repCode,
                                 clientName: analysis.clientName,
                                 effectiveDate: analysis.effectiveDate,
+                                advReceivedDate: analysis.advReceivedDate,
+
                                 clientSignedP11: analysis.clientSignedP11,
-                                clientDatedP11: analysis.clientDatedP11,
+                                clientNameP11: analysis.clientNameP11,
+                                clientDateP11: analysis.clientDateP11,
+                                advisorSignedP11: analysis.advisorSignedP11,
+                                advisorNameP11: analysis.advisorNameP11,
+                                advisorDateP11: analysis.advisorDateP11,
+
                                 accountNumber: analysis.accountNumber,
                                 feeType: analysis.feeType,
                                 feeAmount: analysis.feeAmount,
-                                advReceivedDate: analysis.advReceivedDate,
+
                                 clientSignedP14: analysis.clientSignedP14,
-                                clientDatedP14: analysis.clientDatedP14,
+                                clientNameP14: analysis.clientNameP14,
+                                clientDateP14: analysis.clientDateP14,
+                                advisorSignedP14: analysis.advisorSignedP14,
+                                advisorNameP14: analysis.advisorNameP14,
+                                advisorDateP14: analysis.advisorDateP14,
                             });
 
                             // Cache the result
@@ -139,16 +162,26 @@ export async function GET() {
                             Object.assign(document, {
                                 discretionary: 'Missing',
                                 wrap: 'Missing',
+                                advisorName: 'Missing',
+                                repCode: 'Missing',
                                 clientName: 'Missing',
                                 effectiveDate: 'Missing',
+                                advReceivedDate: 'Missing',
                                 clientSignedP11: 'Missing',
-                                clientDatedP11: 'Missing',
+                                clientNameP11: 'Missing',
+                                clientDateP11: 'Missing',
+                                advisorSignedP11: 'Missing',
+                                advisorNameP11: 'Missing',
+                                advisorDateP11: 'Missing',
                                 accountNumber: 'Missing',
                                 feeType: 'Missing',
                                 feeAmount: 'Missing',
-                                advReceivedDate: 'Missing',
                                 clientSignedP14: 'Missing',
-                                clientDatedP14: 'Missing',
+                                clientNameP14: 'Missing',
+                                clientDateP14: 'Missing',
+                                advisorSignedP14: 'Missing',
+                                advisorNameP14: 'Missing',
+                                advisorDateP14: 'Missing',
                             });
                         }
                     }

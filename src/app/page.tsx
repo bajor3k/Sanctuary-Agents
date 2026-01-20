@@ -1,12 +1,6 @@
-"use client";
 
-import { useEffect } from "react";
+import { redirect } from "next/navigation";
 
 export default function Home() {
-  useEffect(() => {
-    // Hard redirect to bypass Next.js router fetch errors
-    window.location.href = "/dashboard";
-  }, []);
-
-  return null;
+  redirect("/dashboard");
 }

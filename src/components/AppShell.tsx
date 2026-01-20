@@ -12,7 +12,7 @@ const HEADER_H = 60; // px
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [forceOpen, setForceOpen] = useState<SectionKey | null>(null);
-  const SBW = collapsed ? 72 : 260;
+
 
   function handleSidebarToggle() {
     setCollapsed(v => !v);

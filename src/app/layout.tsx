@@ -13,7 +13,7 @@ import { RemindersProvider } from '@/contexts/reminders-context';
 import AppShell from '@/components/AppShell';
 import { ClientLayout } from "@/components/ClientLayout";
 import { ActivityTracker } from '@/components/ActivityTracker';
-import Image from 'next/image';
+
 
 
 export default function RootLayout({

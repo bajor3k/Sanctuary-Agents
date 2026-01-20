@@ -4,6 +4,7 @@ import { useCallback, useState, useEffect } from 'react';
 import { CheckCircle, AlertCircle, History, FileText, CheckCircle2, XCircle, Pencil, ChevronDown, ArrowUpFromLine, RefreshCw, FileCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
+import { useAuth } from '@/contexts/auth-context';
 
 interface HistoryItem {
     id: string;
@@ -27,18 +28,39 @@ interface HistoryItem {
 }
 
 interface ExtractedData {
+    // Page 1 (checkboxes at top + fields)
     discretionary: string;
     wrap: string;
+    advisorName: string;
+    repCode: string;
     clientName: string;
     effectiveDate: string;
+
+    // Page 10
+    advReceivedDate: string;
+
+    // Page 11
     clientSignedP11: string;
-    clientDatedP11: string;
+    clientNameP11: string;
+    clientDateP11: string;
+    advisorSignedP11: string;
+    advisorNameP11: string;
+    advisorDateP11: string;
+
+    // Page 12
     accountNumber: string;
+
+    // Page 13
     feeType: string;
     feeAmount: string;
-    advReceivedDate: string;
+
+    // Page 14
     clientSignedP14: string;
-    clientDatedP14: string;
+    clientNameP14: string;
+    clientDateP14: string;
+    advisorSignedP14: string;
+    advisorNameP14: string;
+    advisorDateP14: string;
 }
 
 const dropdownOptions: Record<string, string[]> = {
@@ -46,9 +68,9 @@ const dropdownOptions: Record<string, string[]> = {
     'wrap': ['WRAP', 'Non-WRAP', 'Missing', 'Error'],
     'feeType': ['Flat', 'Tiered', 'Missing', 'Error'],
     'clientSignedP11': ['Yes', 'No', 'Missing', 'Error'],
-    'clientDatedP11': ['Yes', 'No', 'Missing', 'Error'],
+    'advisorSignedP11': ['Yes', 'No', 'Missing', 'Error'],
     'clientSignedP14': ['Yes', 'No', 'Missing', 'Error'],
-    'clientDatedP14': ['Yes', 'No', 'Missing', 'Error']
+    'advisorSignedP14': ['Yes', 'No', 'Missing', 'Error']
 };
 
 interface DetectedDocument {
@@ -62,6 +84,7 @@ interface DetectedDocument {
 }
 
 export default function AdvisoryAgentsPage() {
+    const { accessToken } = useAuth();
     const [history, setHistory] = useState<HistoryItem[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [advisoryReviewSearchQuery, setAdvisoryReviewSearchQuery] = useState('');
@@ -84,7 +107,11 @@ export default function AdvisoryAgentsPage() {
 
         try {
             console.log('[Advisory Page] Fetching documents from API...');
-            const response = await fetch('/api/advisory-documents');
+            const response = await fetch('/api/advisory-documents', {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`
+                }
+            });
             console.log('[Advisory Page] Response status:', response.status);
 
             if (!response.ok) {
@@ -199,18 +226,40 @@ export default function AdvisoryAgentsPage() {
         // Use AI-extracted values from the API, with overrides taking precedence
         const account = {
             id,
-            accountNumber: (doc as any).accountNumber || doc.filename,
+            // Page 1
             discretionary: (doc as any).discretionary || 'Missing',
             wrap: (doc as any).wrap || 'Missing',
+            advisorName: (doc as any).advisorName || 'Missing',
+            repCode: (doc as any).repCode || 'Missing',
             clientName: (doc as any).clientName || 'Missing',
             effectiveDate: (doc as any).effectiveDate || 'Missing',
+
+            // Page 10
+            advReceivedDate: (doc as any).advReceivedDate || 'Missing',
+
+            // Page 11
             clientSignedP11: (doc as any).clientSignedP11 || 'Missing',
-            clientDatedP11: (doc as any).clientDatedP11 || 'Missing',
+            clientNameP11: (doc as any).clientNameP11 || 'Missing',
+            clientDateP11: (doc as any).clientDateP11 || 'Missing',
+            advisorSignedP11: (doc as any).advisorSignedP11 || 'Missing',
+            advisorNameP11: (doc as any).advisorNameP11 || 'Missing',
+            advisorDateP11: (doc as any).advisorDateP11 || 'Missing',
+
+            // Page 12
+            accountNumber: (doc as any).accountNumber || doc.filename,
+
+            // Page 13
             feeType: (doc as any).feeType || 'Missing',
             feeAmount: (doc as any).feeAmount || 'Missing',
-            advReceivedDate: (doc as any).advReceivedDate || 'Missing',
+
+            // Page 14
             clientSignedP14: (doc as any).clientSignedP14 || 'Missing',
-            clientDatedP14: (doc as any).clientDatedP14 || 'Missing',
+            clientNameP14: (doc as any).clientNameP14 || 'Missing',
+            clientDateP14: (doc as any).clientDateP14 || 'Missing',
+            advisorSignedP14: (doc as any).advisorSignedP14 || 'Missing',
+            advisorNameP14: (doc as any).advisorNameP14 || 'Missing',
+            advisorDateP14: (doc as any).advisorDateP14 || 'Missing',
+
             status: 'nigo' as const,
             pdfPath: doc.path,
             ...overrides // Apply any local edits
@@ -218,10 +267,12 @@ export default function AdvisoryAgentsPage() {
 
         // Recalculate status for detected document if overrides exist
         const dataKeys = [
-            'discretionary', 'wrap', 'clientName', 'effectiveDate',
-            'clientSignedP11', 'clientDatedP11', 'accountNumber',
-            'feeType', 'feeAmount', 'advReceivedDate',
-            'clientSignedP14', 'clientDatedP14'
+            'discretionary', 'wrap', 'advisorName', 'repCode', 'clientName', 'effectiveDate',
+            'advReceivedDate',
+            'clientSignedP11', 'clientNameP11', 'clientDateP11', 'advisorSignedP11', 'advisorNameP11', 'advisorDateP11',
+            'accountNumber',
+            'feeType', 'feeAmount',
+            'clientSignedP14', 'clientNameP14', 'clientDateP14', 'advisorSignedP14', 'advisorNameP14', 'advisorDateP14'
         ];
         // For status calc, we check if all required keys satisfy isValidValue
         const isIgo = dataKeys.every(key => isValidValue(key, account[key as keyof typeof account] as string));
@@ -504,18 +555,39 @@ export default function AdvisoryAgentsPage() {
                             {filteredAccounts.map((account) => {
                                 const isExpanded = expandedRows.has(account.id);
                                 const accountDataPoints = [
-                                    { label: 'Discretionary v. Non-Discretionary', value: account.discretionary, key: 'discretionary' },
-                                    { label: 'WRAP v. Non-WRAP', value: account.wrap, key: 'wrap' },
-                                    { label: "Client's Name", value: account.clientName, key: 'clientName' },
+                                    // Page 1
+                                    { label: 'Discretionary', value: account.discretionary, key: 'discretionary' },
+                                    { label: 'WRAP', value: account.wrap, key: 'wrap' },
+                                    { label: 'Advisor Name', value: account.advisorName, key: 'advisorName' },
+                                    { label: 'Rep Code', value: account.repCode, key: 'repCode' },
+                                    { label: 'Client Name', value: account.clientName, key: 'clientName' },
                                     { label: 'Effective Date', value: account.effectiveDate, key: 'effectiveDate' },
-                                    { label: 'Client Signed Page 11', value: account.clientSignedP11, key: 'clientSignedP11' },
-                                    { label: 'Client Dated Page 11', value: account.clientDatedP11, key: 'clientDatedP11' },
-                                    { label: 'Account Number', value: account.accountNumber, key: 'accountNumber' },
-                                    { label: 'Flat v. Tiered', value: account.feeType, key: 'feeType' },
-                                    { label: 'Fee Amount', value: account.feeAmount, key: 'feeAmount' },
+
+                                    // Page 10
                                     { label: 'ADV Received Date', value: account.advReceivedDate, key: 'advReceivedDate' },
-                                    { label: 'Client Signed Page 14', value: account.clientSignedP14, key: 'clientSignedP14' },
-                                    { label: 'Client Dated Page 14', value: account.clientDatedP14, key: 'clientDatedP14' },
+
+                                    // Page 11
+                                    { label: 'Client Signed', value: account.clientSignedP11, key: 'clientSignedP11' },
+                                    { label: 'Client Name', value: account.clientNameP11, key: 'clientNameP11' },
+                                    { label: 'Client Date', value: account.clientDateP11, key: 'clientDateP11' },
+                                    { label: 'Advisor Signed', value: account.advisorSignedP11, key: 'advisorSignedP11' },
+                                    { label: 'Advisor Name', value: account.advisorNameP11, key: 'advisorNameP11' },
+                                    { label: 'Advisor Date', value: account.advisorDateP11, key: 'advisorDateP11' },
+
+                                    // Page 12
+                                    { label: 'Account Number', value: account.accountNumber, key: 'accountNumber' },
+
+                                    // Page 13
+                                    { label: 'Fee Type', value: account.feeType, key: 'feeType' },
+                                    { label: 'Fee Amount', value: account.feeAmount, key: 'feeAmount' },
+
+                                    // Page 14
+                                    { label: 'Client Signed', value: account.clientSignedP14, key: 'clientSignedP14' },
+                                    { label: 'Client Name', value: account.clientNameP14, key: 'clientNameP14' },
+                                    { label: 'Client Date', value: account.clientDateP14, key: 'clientDateP14' },
+                                    { label: 'Advisor Signed', value: account.advisorSignedP14, key: 'advisorSignedP14' },
+                                    { label: 'Advisor Name', value: account.advisorNameP14, key: 'advisorNameP14' },
+                                    { label: 'Advisor Date', value: account.advisorDateP14, key: 'advisorDateP14' },
                                 ];
 
                                 return (
@@ -579,12 +651,28 @@ export default function AdvisoryAgentsPage() {
                                                 <div className="flex flex-col gap-1 min-w-0">
                                                     <span className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wider">PDF</span>
                                                     <button
-                                                        onClick={(e) => {
+                                                        onClick={async (e) => {
                                                             e.stopPropagation();
                                                             if (account.pdfPath) {
                                                                 // Open PDF in new tab via API endpoint
-                                                                const pdfUrl = `/api/view-pdf?path=${encodeURIComponent(account.pdfPath)}`;
-                                                                window.open(pdfUrl, '_blank');
+                                                                // Fetch PDF with auth headers then open blob URL
+                                                                try {
+                                                                    const pdfUrl = `/api/view-pdf?path=${encodeURIComponent(account.pdfPath)}`;
+                                                                    const res = await fetch(pdfUrl, {
+                                                                        headers: {
+                                                                            'Authorization': `Bearer ${accessToken}`
+                                                                        }
+                                                                    });
+                                                                    if (!res.ok) throw new Error('Failed to load PDF');
+                                                                    const blob = await res.blob();
+                                                                    const blobUrl = URL.createObjectURL(blob);
+                                                                    window.open(blobUrl, '_blank');
+                                                                    // Clean up blob URL after a delay
+                                                                    setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+                                                                } catch (err) {
+                                                                    console.error('Error opening PDF:', err);
+                                                                    alert('Failed to open PDF. Please try again.');
+                                                                }
                                                             }
                                                         }}
                                                         disabled={!account.pdfPath}
@@ -631,7 +719,7 @@ export default function AdvisoryAgentsPage() {
                                         {/* Expanded Data Points (Editable) */}
                                         {isExpanded && (
                                             <div className="border-t border-border bg-muted/5 p-4 animate-in slide-in-from-top-2 duration-200">
-                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
                                                     {accountDataPoints.map((point, index) => {
                                                         const isEditing = editingAccount?.id === account.id && editingAccount?.field === point.key;
                                                         const isFound = isValidValue(point.key, point.value);

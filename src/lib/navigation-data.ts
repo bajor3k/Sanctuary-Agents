@@ -65,7 +65,8 @@ export const navigationData: Record<'Dashboard' | 'Orion' | 'Kanban' | 'Advisor 
     { name: 'Overview', icon: LayoutGrid, href: '/dashboard' }
   ],
   'Orion': [
-    { name: 'Advisory', icon: FileText, href: '/orion/advisory' }
+    { name: 'Advisory', icon: FileText, href: '/orion/advisory' },
+    { name: 'PDF Generator', icon: FileText, href: '/agents/pdf-generator' }
   ],
   'Kanban': [],
   'Advisor Services': [
