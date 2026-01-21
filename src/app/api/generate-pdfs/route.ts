@@ -1,13 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PDFDocument, StandardFonts } from 'pdf-lib';
+import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import fs from 'fs/promises';
 import path from 'path';
+
+// Template configurations matching all 16 reference documents
+interface TemplateConfig {
+    discretion: 'Discretionary' | 'Non-Discretionary';
+    wrap: 'WRAP' | 'NON-WRAP';
+    feeType: 'Flat' | 'Tiered';
+    accountHolders: 1 | 2;
+    filename: string;
+}
+
+const TEMPLATES: TemplateConfig[] = [
+    { discretion: 'Discretionary', wrap: 'WRAP', feeType: 'Flat', accountHolders: 1, filename: 'Discretionary WRAP Flat (1).pdf' },
+    { discretion: 'Discretionary', wrap: 'WRAP', feeType: 'Flat', accountHolders: 2, filename: 'Discretionary WRAP Flat (2).pdf' },
+    { discretion: 'Discretionary', wrap: 'WRAP', feeType: 'Tiered', accountHolders: 1, filename: 'Discretionary WRAP Tiered (1).pdf' },
+    { discretion: 'Discretionary', wrap: 'WRAP', feeType: 'Tiered', accountHolders: 2, filename: 'Discretionary WRAP Tiered (2).pdf' },
+
+    { discretion: 'Discretionary', wrap: 'NON-WRAP', feeType: 'Flat', accountHolders: 1, filename: 'Discretionary NON-WRAP Flat (1).pdf' },
+    { discretion: 'Discretionary', wrap: 'NON-WRAP', feeType: 'Flat', accountHolders: 2, filename: 'Discretionary NON-WRAP Flat (2).pdf' },
+    { discretion: 'Discretionary', wrap: 'NON-WRAP', feeType: 'Tiered', accountHolders: 1, filename: 'Discretionary NON-WRAP Tiered (1).pdf' },
+    { discretion: 'Discretionary', wrap: 'NON-WRAP', feeType: 'Tiered', accountHolders: 2, filename: 'Discretionary NON-WRAP Tiered (2).pdf' },
+
+    { discretion: 'Non-Discretionary', wrap: 'WRAP', feeType: 'Flat', accountHolders: 1, filename: 'Non-Discretionary WRAP Flat (1).pdf' },
+    { discretion: 'Non-Discretionary', wrap: 'WRAP', feeType: 'Flat', accountHolders: 2, filename: 'Non-Discretionary WRAP Flat (2).pdf' },
+    { discretion: 'Non-Discretionary', wrap: 'WRAP', feeType: 'Tiered', accountHolders: 1, filename: 'Non-Discretionary WRAP Tiered (1).pdf' },
+    { discretion: 'Non-Discretionary', wrap: 'WRAP', feeType: 'Tiered', accountHolders: 2, filename: 'Non-Discretionary WRAP Tiered (2).pdf' },
+
+    { discretion: 'Non-Discretionary', wrap: 'NON-WRAP', feeType: 'Flat', accountHolders: 1, filename: 'Non-Discretionary NON-WRAP Flat (1).pdf' },
+    { discretion: 'Non-Discretionary', wrap: 'NON-WRAP', feeType: 'Flat', accountHolders: 2, filename: 'Non-Discretionary NON-WRAP Flat (2).pdf' },
+    { discretion: 'Non-Discretionary', wrap: 'NON-WRAP', feeType: 'Tiered', accountHolders: 1, filename: 'Non-Discretionary NON-WRAP Tiered (1).pdf' },
+    { discretion: 'Non-Discretionary', wrap: 'NON-WRAP', feeType: 'Tiered', accountHolders: 2, filename: 'Non-Discretionary NON-WRAP Tiered (2).pdf' },
+];
 
 // Random data generators
 const firstNames = ['John', 'Jane', 'Michael', 'Sarah', 'David', 'Emily', 'Robert', 'Lisa', 'James', 'Mary', 'William', 'Jennifer', 'Richard', 'Linda', 'Thomas', 'Patricia', 'Charles', 'Barbara', 'Daniel', 'Susan'];
 const lastNames = ['Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez', 'Hernandez', 'Lopez', 'Gonzalez', 'Wilson', 'Anderson', 'Thomas', 'Taylor', 'Moore', 'Jackson', 'Martin'];
-const repCodes = ['ABC123', 'DEF456', 'GHI789', 'JKL012', 'MNO345', 'PQR678', 'STU901', 'VWX234', 'YZA567', 'BCD890'];
-const feeStructures = ['1.00%', '1.25%', '1.50%', '0.75%', '2.00%'];
+const advisorFirstNames = ['James', 'Patricia', 'Mark', 'Jennifer', 'Steven', 'Michelle', 'Kevin', 'Angela', 'Brian', 'Rebecca'];
+const repCodes = ['ABC', 'DEF', 'GHI', 'JKL', 'MNO', 'PQR', 'STU', 'VWX', 'YZA', 'BCD'];
+const flatFees = ['0.50%', '0.75%', '0.85%', '1.00%', '1.15%', '1.25%', '1.35%', '1.50%', '1.75%', '2.00%'];
 
 function randomElement<T>(arr: T[]): T {
     return arr[Math.floor(Math.random() * arr.length)];
@@ -32,6 +64,194 @@ function randomDateInLastMonth(): string {
     return `${month}/${day}/${year}`;
 }
 
+function generateTieredFeeStructure(): string {
+    const structures = [
+        `$0 To $500,000: 1.00%
+$500,000 To $1,000,000: 0.85%
+$1,000,000 To $2,000,000: 0.75%
+$2,000,000 To $5,000,000: 0.50%`,
+        `$0 To $250,000: 1.25%
+$250,000 To $750,000: 1.00%
+$750,000 To $1,500,000: 0.85%
+$1,500,000 To $5,000,000: 0.65%`,
+        `$0 To $1,000,000: 1.00%
+$1,000,000 To $3,000,000: 0.75%
+$3,000,000 To $5,000,000: 0.50%
+$5,000,000+: 0.35%`
+    ];
+    return randomElement(structures);
+}
+
+async function fillPdfWithData(pdfBytes: Buffer, template: TemplateConfig): Promise<{ pdfBytes: Uint8Array, metadata: any }> {
+    const pdfDoc = await PDFDocument.load(pdfBytes);
+
+    // Generate dummy data based on template configuration
+    const advisorFirstName = randomElement(advisorFirstNames);
+    const advisorLastName = randomElement(lastNames);
+    const advisorName = `${advisorFirstName} ${advisorLastName}`;
+
+    const clientFirstName = randomElement(firstNames);
+    const clientLastName = randomElement(lastNames);
+
+    // Handle 1 or 2 account holders
+    let clientName: string;
+    let client2Name: string = '';
+    if (template.accountHolders === 2) {
+        const client2FirstName = randomElement(firstNames.filter(n => n !== clientFirstName));
+        clientName = `${clientFirstName} ${clientLastName}`;
+        client2Name = `${client2FirstName} ${clientLastName}`;
+    } else {
+        clientName = `${clientFirstName} ${clientLastName}`;
+    }
+
+    const repCode = randomElement(repCodes);
+    const effectiveDate = randomDateInLastMonth();
+    const advReceivedDate = randomDateInLastMonth();
+    const accountNumber = randomAccountNumber();
+
+    // Fee structure based on template type
+    const feeAmount = template.feeType === 'Flat'
+        ? randomElement(flatFees)
+        : generateTieredFeeStructure();
+
+    const clientDateP11 = randomDateInLastMonth();
+    const clientDateP14 = randomDateInLastMonth();
+    const advisorDateP11 = randomDateInLastMonth();
+    const advisorDateP14 = randomDateInLastMonth();
+    const client2DateP11 = randomDateInLastMonth();
+    const client2DateP14 = randomDateInLastMonth();
+
+    // Get all pages and replace XXXXXX with actual data
+    const pages = pdfDoc.getPages();
+    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+    // We'll use a find-and-replace approach by drawing over the XXXXXX text
+    // This is a simplification - in production you'd want to use form fields or more sophisticated text replacement
+
+    // Try to use form fields if they exist
+    const form = pdfDoc.getForm();
+    const fields = form.getFields();
+
+    console.log(`[PDF Fill] Found ${fields.length} form fields`);
+
+    // Replacements map - what to replace XXXXXX with based on context
+    const replacements: Record<string, string> = {
+        // Page 1
+        'advisor_name': advisorName,
+        'rep_code': repCode,
+        'client_name': clientName,
+        'effective_date': effectiveDate,
+
+        // Page 10
+        'adv_received_date': advReceivedDate,
+
+        // Page 11
+        'client_name_p11': clientName,
+        'client_date_p11': clientDateP11,
+        'advisor_name_p11': advisorName,
+        'advisor_date_p11': advisorDateP11,
+
+        // Page 11 - Client 2 (if 2 holders)
+        ...(template.accountHolders === 2 ? {
+            'client2_name_p11': client2Name,
+            'client2_date_p11': client2DateP11,
+        } : {}),
+
+        // Page 12
+        'account_number': accountNumber,
+
+        // Page 13
+        'fee_amount': feeAmount,
+
+        // Page 14
+        'client_name_p14': clientName,
+        'client_date_p14': clientDateP14,
+        'advisor_name_p14': advisorName,
+        'advisor_date_p14': advisorDateP14,
+
+        // Page 14 - Client 2 (if 2 holders)
+        ...(template.accountHolders === 2 ? {
+            'client2_name_p14': client2Name,
+            'client2_date_p14': client2DateP14,
+        } : {}),
+    };
+
+    // Try to fill form fields if they exist
+    fields.forEach(field => {
+        const fieldName = field.getName();
+        const fieldType = field.constructor.name;
+
+        console.log(`[PDF Fill] Field: ${fieldName} (${fieldType})`);
+
+        if (fieldType === 'PDFTextField') {
+            const textField = form.getTextField(fieldName);
+            const currentValue = textField.getText() || '';
+
+            // Replace if it contains XXXXXX or "Flat" placeholder
+            if (currentValue.includes('XXXXXX') || currentValue === 'Flat' || currentValue.toLowerCase().includes('flat')) {
+                // Try to find appropriate replacement
+                const lowerFieldName = fieldName.toLowerCase();
+                let replacement = 'FILLED';
+
+                // Smart matching based on field name
+                if (lowerFieldName.includes('advisor') && lowerFieldName.includes('name')) {
+                    replacement = advisorName;
+                } else if (lowerFieldName.includes('rep') || lowerFieldName.includes('code')) {
+                    replacement = repCode;
+                } else if (lowerFieldName.includes('client') && lowerFieldName.includes('name')) {
+                    if (lowerFieldName.includes('2') || lowerFieldName.includes('joint')) {
+                        replacement = client2Name || clientName;
+                    } else {
+                        replacement = clientName;
+                    }
+                } else if (lowerFieldName.includes('effective') || lowerFieldName.includes('date')) {
+                    replacement = effectiveDate;
+                } else if (lowerFieldName.includes('account') || lowerFieldName.includes('number')) {
+                    replacement = accountNumber;
+                } else if (lowerFieldName.includes('fee') || lowerFieldName.includes('rate') || lowerFieldName.includes('amount')) {
+                    // For flat fee templates, use the percentage; for tiered, use first line or full structure
+                    replacement = template.feeType === 'Flat' ? feeAmount : feeAmount;
+                } else if (lowerFieldName.includes('adv')) {
+                    replacement = advReceivedDate;
+                } else if (currentValue === 'Flat' || currentValue.toLowerCase() === 'flat') {
+                    // If the current value is literally "Flat", replace with a fee percentage
+                    replacement = template.feeType === 'Flat' ? feeAmount : 'Tiered - See Schedule';
+                }
+
+                console.log(`[PDF Fill] Replacing "${currentValue}" with "${replacement}"`);
+                textField.setText(replacement);
+            }
+        }
+    });
+
+    const filledPdfBytes = await pdfDoc.save();
+
+    const metadata = {
+        template: template.filename,
+        discretion: template.discretion,
+        wrap: template.wrap,
+        feeType: template.feeType,
+        accountHolders: template.accountHolders,
+        generatedData: {
+            advisorName,
+            clientName,
+            client2Name: template.accountHolders === 2 ? client2Name : null,
+            repCode,
+            accountNumber,
+            effectiveDate,
+            advReceivedDate,
+            feeAmount: template.feeType === 'Flat' ? feeAmount : 'Tiered',
+            clientDateP11,
+            clientDateP14,
+            advisorDateP11,
+            advisorDateP14,
+        }
+    };
+
+    return { pdfBytes: filledPdfBytes, metadata };
+}
+
 export async function POST(request: NextRequest) {
     console.log('[PDF] Starting PDF generation...');
 
@@ -40,176 +260,69 @@ export async function POST(request: NextRequest) {
         const { pdfBase64, count } = body;
         console.log(`[PDF] Request: count=${count}, hasUpload=${!!pdfBase64}`);
 
-        // Determine source PDF - prioritize: uploaded > reference template > fallback
-        let pdfBuffer: Buffer;
-        const referenceTemplatePath = path.join(process.cwd(), 'src/ai/reference-docs/Discretionary Wrap IGO.pdf');
-        const fallbackTemplatePath = '/Users/bajor3k/Desktop/AA Dummy/Filled AA copy.pdf';
-
-        if (pdfBase64) {
-            console.log('[PDF] Using uploaded PDF');
-            pdfBuffer = Buffer.from(pdfBase64.split(',')[1], 'base64');
-        } else {
-            // Try reference template first
-            try {
-                await fs.access(referenceTemplatePath);
-                console.log('[PDF] Using reference template from src/ai/reference-docs/');
-                pdfBuffer = await fs.readFile(referenceTemplatePath);
-            } catch {
-                // Fall back to legacy desktop template
-                try {
-                    await fs.access(fallbackTemplatePath);
-                    console.log('[PDF] Using fallback desktop template');
-                    pdfBuffer = await fs.readFile(fallbackTemplatePath);
-                } catch {
-                    return NextResponse.json(
-                        { error: 'No template available. Please upload a PDF or ensure reference template exists in src/ai/reference-docs/' },
-                        { status: 400 }
-                    );
-                }
-            }
-        }
-
         // Create output folder
         const outputFolder = '/Users/bajor3k/Desktop/Orion Advisory';
         await fs.mkdir(outputFolder, { recursive: true });
 
         const filePaths: string[] = [];
         const parsedCount = parseInt(count);
+        const generatedMetadata: any[] = [];
 
         // Generate PDFs
         for (let i = 1; i <= parsedCount; i++) {
             console.log(`[PDF] Generating ${i}/${parsedCount}...`);
 
-            // Generate ALL 22 fields of dummy data
-            const advisorFirstName = randomElement(firstNames);
-            const advisorLastName = randomElement(lastNames);
-            const advisorName = `${advisorFirstName} ${advisorLastName}`;
-            const clientFirstName = randomElement(firstNames);
-            const clientLastName = randomElement(lastNames);
-            const clientName = `${clientFirstName} ${clientLastName}`;
-            const repCode = randomElement(repCodes);
-            const effectiveDate = randomDateInLastMonth();
-            const advReceivedDate = randomDateInLastMonth();
-            const accountNumber = randomAccountNumber();
-            const feeType = 'Flat';
-            const feeAmount = `Flat ${randomElement(feeStructures)}`;
-            const clientDateP11 = randomDateInLastMonth();
-            const clientDateP14 = randomDateInLastMonth();
-            const advisorDateP11 = randomDateInLastMonth();
-            const advisorDateP14 = randomDateInLastMonth();
+            // Randomly select a template
+            const template = randomElement(TEMPLATES);
+            const templatePath = path.join(process.cwd(), 'src/ai/reference-docs', template.filename);
 
-            // Load template
-            const pdfDoc = await PDFDocument.load(pdfBuffer);
-            const form = pdfDoc.getForm();
+            let pdfBuffer: Buffer;
 
-            // Embed font for signatures
-            const signatureFont = await pdfDoc.embedFont(StandardFonts.TimesRomanItalic);
-
-            // 1. PAGE 1 - Checkboxes
-            // We need to find the specific checkboxes. Based on standard forms:
-            try {
-                // Try checking "Discretionary" box - strictly looking for match
-                // If specific names aren't known, we might need to inspect via logic, 
-                // but for now let's assume standard names or try to find them.
-                // Since we don't have exact checkbox names from the dump (it only showed TextFields),
-                // we'll try common variations.
-                const fields = form.getFields();
-                const checkField = (partialName: string) => {
-                    const field = fields.find(f => f.getName().toLowerCase().includes(partialName.toLowerCase()));
-                    if (field && field.constructor.name === 'PDFCheckBox') {
-                        form.getCheckBox(field.getName()).check();
-                    }
-                };
-
-                checkField('Discretionary'); // Check Discretionary
-                checkField('Wrap');          // Check Wrap
-            } catch (e) {
-                console.log('[PDF] Error checking boxes:', e);
+            if (pdfBase64) {
+                // Use uploaded PDF if provided
+                console.log('[PDF] Using uploaded PDF');
+                pdfBuffer = Buffer.from(pdfBase64.split(',')[1], 'base64');
+            } else {
+                // Use selected template
+                try {
+                    pdfBuffer = await fs.readFile(templatePath);
+                    console.log(`[PDF] Using template: ${template.filename}`);
+                } catch (error) {
+                    console.error(`[PDF] Template not found: ${template.filename}`);
+                    return NextResponse.json(
+                        { error: `Template not found: ${template.filename}. Ensure all 16 reference templates exist.` },
+                        { status: 400 }
+                    );
+                }
             }
 
-            // Helper to fill text field
-            const fillField = (fieldName: string, value: string) => {
-                try {
-                    const field = form.getTextField(fieldName);
-                    if (field) {
-                        const currentValue = field.getText() || '';
-                        if (!currentValue || currentValue === 'XXXXXX' || currentValue.includes('XXXXXX')) {
-                            field.setText(value);
-                        }
-                    }
-                } catch (e) { }
-            };
+            // Fill the PDF with dummy data
+            const { pdfBytes: filledPdfBytes, metadata } = await fillPdfWithData(pdfBuffer, template);
 
-            // Helper to sign field (italicized)
-            const signField = (fieldName: string, value: string) => {
-                try {
-                    // Try to find field by exact name or partial match if needed
-                    let field = form.getTextField(fieldName);
-                    if (!field) {
-                        const match = form.getFields().find(f => f.getName() === fieldName);
-                        if (match && match.constructor.name === 'PDFTextField') {
-                            field = form.getTextField(match.getName());
-                        }
-                    }
-
-                    if (field) {
-                        field.setText(`/s/ ${value}`);
-                        field.updateAppearances(signatureFont);
-                    }
-                } catch (e) { }
-            };
-
-            // --- PAGE 1 FIELDS ---
-            fillField('Investment Advisor Representative Name', advisorName);
-            fillField('Rep Code', repCode);
-            fillField('Print Client Name Trustee or Authorized Signor', clientName);
-            fillField('Date_5', effectiveDate);
-            fillField('Effective Date', effectiveDate);
-
-            // --- PAGE 10 ---
-            fillField('Date received', advReceivedDate);
-
-            // --- PAGE 11 ---
-            fillField('Client Name Pr', clientName);
-            fillField('Date_6', clientDateP11);
-            fillField('Investment Adviser Name Printed_2', advisorName);
-            fillField('Date_10', advisorDateP11);
-
-            // Signatures P11
-            signField('Client Signature Trustee or Author', clientName);
-            signField('Investment Adviser Representative Signature', advisorName); // Assuming this is P11 advisor sig
-
-            // --- PAGE 12 ---
-            fillField('Account Registration Name  TypeRow1', accountNumber);
-
-            // --- PAGE 13 ---
-            fillField('Text3', feeAmount);
-
-            // --- PAGE 14 ---
-            fillField('Client Name Pr_2', clientName);
-            fillField('Date_1', clientDateP14);
-            fillField('Investment Adviser Name Printed_4', advisorName); // Field 66 from dump
-            // Missing explicit Advisor Date P14 field in dump? Try 'Date_7' or 'Date_8'?
-            // Dump showed Date_7, Date_8, Date_9. Let's fill them.
-            fillField('Date_7', advisorDateP14);
-
-            // Signatures P14
-            signField('Client Signature Trustee or Author_2', clientName);
-            signField('Investment Adviser Signature', advisorName);
-
-            // Save
-            const pdfBytes = await pdfDoc.save();
-            const fileName = `IGO_${clientLastName}_${accountNumber}_${i}.pdf`;
+            // Create filename
+            const templateType = `${template.discretion}_${template.wrap}_${template.feeType}_${template.accountHolders}holder`;
+            const clientLastName = metadata.generatedData.clientName.split(' ')[1] || 'Unknown';
+            const fileName = `FILLED_${templateType}_${clientLastName}_${metadata.generatedData.accountNumber}_${i}.pdf`;
             const filePath = path.join(outputFolder, fileName);
-            await fs.writeFile(filePath, pdfBytes);
+
+            await fs.writeFile(filePath, filledPdfBytes);
             filePaths.push(filePath);
+
+            // Store metadata for logging
+            generatedMetadata.push({
+                filename: fileName,
+                ...metadata
+            });
         }
 
         console.log(`[PDF] Success! Generated ${parsedCount} files`);
+        console.log('[PDF] Generated metadata:', JSON.stringify(generatedMetadata, null, 2));
+
         return NextResponse.json({
             success: true,
-            message: `Generated ${count} PDFs with random data`,
+            message: `Generated ${count} PDFs`,
             filePaths,
+            metadata: generatedMetadata,
         });
     } catch (error) {
         console.error('[PDF] ERROR:', error);

@@ -16,26 +16,39 @@ interface DocumentFile {
     createdAt: string;
     modifiedAt: string;
     extension: string;
-    // AI-extracted fields
+    // AI-extracted fields (up to 29 total for 2-holder accounts)
     discretionary?: string;
     wrap?: string;
     advisorName?: string;
     repCode?: string;
     clientName?: string;
     effectiveDate?: string;
+    accountHolders?: number;
     advReceivedDate?: string;
+    // Page 11 - Client 1  
     clientSignedP11?: string;
     clientNameP11?: string;
     clientDateP11?: string;
+    // Page 11 - Client 2 (optional)
+    client2SignedP11?: string;
+    client2NameP11?: string;
+    client2DateP11?: string;
+    // Page 11 - Advisor
     advisorSignedP11?: string;
     advisorNameP11?: string;
     advisorDateP11?: string;
     accountNumber?: string;
     feeType?: string;
     feeAmount?: string;
+    // Page 14 - Client 1
     clientSignedP14?: string;
     clientNameP14?: string;
     clientDateP14?: string;
+    // Page 14 - Client 2 (optional)
+    client2SignedP14?: string;
+    client2NameP14?: string;
+    client2DateP14?: string;
+    // Page 14 - Advisor
     advisorSignedP14?: string;
     advisorNameP14?: string;
     advisorDateP14?: string;
@@ -121,7 +134,7 @@ export async function GET() {
                             const analysis = await analyzeAdvisoryPdf(filePath);
                             console.log(`[AI] Analysis result for ${filename}:`, JSON.stringify(analysis, null, 2));
 
-                            // Add analysis to document
+                            // Add analysis to document (all fields including optional client2)
                             Object.assign(document, {
                                 discretionary: analysis.discretionary,
                                 wrap: analysis.wrap,
@@ -129,11 +142,15 @@ export async function GET() {
                                 repCode: analysis.repCode,
                                 clientName: analysis.clientName,
                                 effectiveDate: analysis.effectiveDate,
+                                accountHolders: analysis.accountHolders,
                                 advReceivedDate: analysis.advReceivedDate,
 
                                 clientSignedP11: analysis.clientSignedP11,
                                 clientNameP11: analysis.clientNameP11,
                                 clientDateP11: analysis.clientDateP11,
+                                client2SignedP11: analysis.client2SignedP11,
+                                client2NameP11: analysis.client2NameP11,
+                                client2DateP11: analysis.client2DateP11,
                                 advisorSignedP11: analysis.advisorSignedP11,
                                 advisorNameP11: analysis.advisorNameP11,
                                 advisorDateP11: analysis.advisorDateP11,
@@ -145,6 +162,9 @@ export async function GET() {
                                 clientSignedP14: analysis.clientSignedP14,
                                 clientNameP14: analysis.clientNameP14,
                                 clientDateP14: analysis.clientDateP14,
+                                client2SignedP14: analysis.client2SignedP14,
+                                client2NameP14: analysis.client2NameP14,
+                                client2DateP14: analysis.client2DateP14,
                                 advisorSignedP14: analysis.advisorSignedP14,
                                 advisorNameP14: analysis.advisorNameP14,
                                 advisorDateP14: analysis.advisorDateP14,
@@ -158,7 +178,7 @@ export async function GET() {
                             await new Promise(resolve => setTimeout(resolve, 7000));
                         } catch (analysisError) {
                             console.error(`[AI] Analysis failed for ${filename}:`, analysisError);
-                            // Set all to "Missing" on error
+                            // Set all to "Missing" on error (all 23 fields)
                             Object.assign(document, {
                                 discretionary: 'Missing',
                                 wrap: 'Missing',
@@ -166,6 +186,7 @@ export async function GET() {
                                 repCode: 'Missing',
                                 clientName: 'Missing',
                                 effectiveDate: 'Missing',
+                                accountHolders: 1,
                                 advReceivedDate: 'Missing',
                                 clientSignedP11: 'Missing',
                                 clientNameP11: 'Missing',

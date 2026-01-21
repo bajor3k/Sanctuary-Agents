@@ -35,14 +35,20 @@ interface ExtractedData {
     repCode: string;
     clientName: string;
     effectiveDate: string;
+    accountHolders: number;
 
     // Page 10
     advReceivedDate: string;
 
-    // Page 11
+    // Page 11 - Client 1
     clientSignedP11: string;
     clientNameP11: string;
     clientDateP11: string;
+    // Page 11 - Client 2 (optional)
+    client2SignedP11?: string;
+    client2NameP11?: string;
+    client2DateP11?: string;
+    // Page 11 - Advisor
     advisorSignedP11: string;
     advisorNameP11: string;
     advisorDateP11: string;
@@ -54,10 +60,15 @@ interface ExtractedData {
     feeType: string;
     feeAmount: string;
 
-    // Page 14
+    // Page 14 - Client 1
     clientSignedP14: string;
     clientNameP14: string;
     clientDateP14: string;
+    // Page 14 - Client 2 (optional)
+    client2SignedP14?: string;
+    client2NameP14?: string;
+    client2DateP14?: string;
+    // Page 14 - Advisor
     advisorSignedP14: string;
     advisorNameP14: string;
     advisorDateP14: string;
@@ -196,10 +207,26 @@ export default function AdvisoryAgentsPage() {
         // General invalid values
         if (!value || value === 'Not Found' || value === 'Missing' || value === 'Error') return false;
 
-        // Specific field validation
-        const yesNoFields = ['clientSignedP11', 'clientDatedP11', 'clientSignedP14', 'clientDatedP14'];
-        if (yesNoFields.includes(key)) {
-            return value === 'Yes';
+        // Signature fields - must be "Yes" (or "N/A" for optional client2)
+        const signatureFields = [
+            'clientSignedP11', 'advisorSignedP11',
+            'clientSignedP14', 'advisorSignedP14',
+            'client2SignedP11', 'client2SignedP14'
+        ];
+        if (signatureFields.includes(key)) {
+            return value === 'Yes' || value === 'N/A';
+        }
+
+        // Optional client2 fields - N/A or value is OK
+        const optionalFields = ['client2NameP11', 'client2DateP11', 'client2NameP14', 'client2DateP14'];
+        if (optionalFields.includes(key)) {
+            return value !== 'Missing' && value !== 'Error' && value !== '';
+        }
+
+        // accountHolders - numeric validation
+        if (key === 'accountHolders') {
+            const num = Number(value);
+            return num === 1 || num === 2;
         }
 
         // For other fields, as long as it's not in the general invalid list, it's valid
@@ -233,14 +260,20 @@ export default function AdvisoryAgentsPage() {
             repCode: (doc as any).repCode || 'Missing',
             clientName: (doc as any).clientName || 'Missing',
             effectiveDate: (doc as any).effectiveDate || 'Missing',
+            accountHolders: (doc as any).accountHolders || 1,
 
             // Page 10
             advReceivedDate: (doc as any).advReceivedDate || 'Missing',
 
-            // Page 11
+            // Page 11 - Client 1
             clientSignedP11: (doc as any).clientSignedP11 || 'Missing',
             clientNameP11: (doc as any).clientNameP11 || 'Missing',
             clientDateP11: (doc as any).clientDateP11 || 'Missing',
+            // Page 11 - Client 2 (optional)
+            client2SignedP11: (doc as any).client2SignedP11,
+            client2NameP11: (doc as any).client2NameP11,
+            client2DateP11: (doc as any).client2DateP11,
+            // Page 11 - Advisor
             advisorSignedP11: (doc as any).advisorSignedP11 || 'Missing',
             advisorNameP11: (doc as any).advisorNameP11 || 'Missing',
             advisorDateP11: (doc as any).advisorDateP11 || 'Missing',
@@ -252,10 +285,15 @@ export default function AdvisoryAgentsPage() {
             feeType: (doc as any).feeType || 'Missing',
             feeAmount: (doc as any).feeAmount || 'Missing',
 
-            // Page 14
+            // Page 14 - Client 1
             clientSignedP14: (doc as any).clientSignedP14 || 'Missing',
             clientNameP14: (doc as any).clientNameP14 || 'Missing',
             clientDateP14: (doc as any).clientDateP14 || 'Missing',
+            // Page 14 - Client 2 (optional)
+            client2SignedP14: (doc as any).client2SignedP14,
+            client2NameP14: (doc as any).client2NameP14,
+            client2DateP14: (doc as any).client2DateP14,
+            // Page 14 - Advisor
             advisorSignedP14: (doc as any).advisorSignedP14 || 'Missing',
             advisorNameP14: (doc as any).advisorNameP14 || 'Missing',
             advisorDateP14: (doc as any).advisorDateP14 || 'Missing',
@@ -286,8 +324,22 @@ export default function AdvisoryAgentsPage() {
 
     const [editingAccount, setEditingAccount] = useState<{ id: string, field: string } | null>(null);
     const [editAccountValue, setEditAccountValue] = useState('');
+    const [showTierEditor, setShowTierEditor] = useState(false);
+    const [tierEditorValue, setTierEditorValue] = useState('');
+    const [tierEditorAccount, setTierEditorAccount] = useState<{ id: string, field: string } | null>(null);
 
     const handleAccountEditStart = (accountId: string, fieldKey: string, currentValue: string) => {
+        // Check if editing tiered fee amount
+        const account = allAccounts.find(a => a.id === accountId);
+        if (fieldKey === 'feeAmount' && account?.feeType === 'Tiered') {
+            // Show tier editor modal instead of inline edit
+            setTierEditorAccount({ id: accountId, field: fieldKey });
+            setTierEditorValue(currentValue || '$0 To $500,000: 1.00%\n$500,000 To $1,000,000: 0.85%\n$1,000,000 To $2,000,000: 0.75%\n$2,000,000 To $5,000,000: 0.50%');
+            setShowTierEditor(true);
+            return;
+        }
+
+        // Standard edit flow
         setEditingAccount({ id: accountId, field: fieldKey });
         const options = dropdownOptions[fieldKey];
         if (options && (currentValue === 'Not Found' || currentValue === 'Missing' || !currentValue)) {
@@ -343,6 +395,42 @@ export default function AdvisoryAgentsPage() {
     const handleAccountEditCancel = () => {
         setEditingAccount(null);
         setEditAccountValue('');
+    };
+
+    const handleTierEditorSave = () => {
+        if (!tierEditorAccount) return;
+
+        // Check if editing a detected document
+        if (tierEditorAccount.id.startsWith('detected-')) {
+            setDetectedDocumentOverrides(prev => {
+                const existingOverrides = prev[tierEditorAccount.id] || {};
+                return {
+                    ...prev,
+                    [tierEditorAccount.id]: {
+                        ...existingOverrides,
+                        [tierEditorAccount.field]: tierEditorValue
+                    }
+                };
+            });
+        } else {
+            // Update regular account
+            setAccounts(prev => prev.map(acc => {
+                if (acc.id === tierEditorAccount.id) {
+                    return { ...acc, [tierEditorAccount.field]: tierEditorValue };
+                }
+                return acc;
+            }));
+        }
+
+        setShowTierEditor(false);
+        setTierEditorAccount(null);
+        setTierEditorValue('');
+    };
+
+    const handleTierEditorCancel = () => {
+        setShowTierEditor(false);
+        setTierEditorAccount(null);
+        setTierEditorValue('');
     };
 
     const [isPushModalOpen, setIsPushModalOpen] = useState(false);
@@ -566,10 +654,19 @@ export default function AdvisoryAgentsPage() {
                                     // Page 10
                                     { label: 'ADV Received Date', value: account.advReceivedDate, key: 'advReceivedDate' },
 
-                                    // Page 11
-                                    { label: 'Client Signed', value: account.clientSignedP11, key: 'clientSignedP11' },
-                                    { label: 'Client Name', value: account.clientNameP11, key: 'clientNameP11' },
-                                    { label: 'Client Date', value: account.clientDateP11, key: 'clientDateP11' },
+                                    // Page 11 - Client 1
+                                    { label: 'Client 1 Signed', value: account.clientSignedP11, key: 'clientSignedP11' },
+                                    { label: 'Client 1 Name', value: account.clientNameP11, key: 'clientNameP11' },
+                                    { label: 'Client 1 Date', value: account.clientDateP11, key: 'clientDateP11' },
+
+                                    // Page 11 - Client 2 (conditional)
+                                    ...(account.client2SignedP11 && account.client2SignedP11 !== 'N/A' ? [
+                                        { label: 'Client 2 Signed', value: account.client2SignedP11, key: 'client2SignedP11' },
+                                        { label: 'Client 2 Name', value: account.client2NameP11 || 'Missing', key: 'client2NameP11' },
+                                        { label: 'Client 2 Date', value: account.client2DateP11 || 'Missing', key: 'client2DateP11' },
+                                    ] : []),
+
+                                    // Page 11 - Advisor
                                     { label: 'Advisor Signed', value: account.advisorSignedP11, key: 'advisorSignedP11' },
                                     { label: 'Advisor Name', value: account.advisorNameP11, key: 'advisorNameP11' },
                                     { label: 'Advisor Date', value: account.advisorDateP11, key: 'advisorDateP11' },
@@ -581,10 +678,19 @@ export default function AdvisoryAgentsPage() {
                                     { label: 'Fee Type', value: account.feeType, key: 'feeType' },
                                     { label: 'Fee Amount', value: account.feeAmount, key: 'feeAmount' },
 
-                                    // Page 14
-                                    { label: 'Client Signed', value: account.clientSignedP14, key: 'clientSignedP14' },
-                                    { label: 'Client Name', value: account.clientNameP14, key: 'clientNameP14' },
-                                    { label: 'Client Date', value: account.clientDateP14, key: 'clientDateP14' },
+                                    // Page 14 - Client 1
+                                    { label: 'Client 1 Signed', value: account.clientSignedP14, key: 'clientSignedP14' },
+                                    { label: 'Client 1 Name', value: account.clientNameP14, key: 'clientNameP14' },
+                                    { label: 'Client 1 Date', value: account.clientDateP14, key: 'clientDateP14' },
+
+                                    // Page 14 - Client 2 (conditional)
+                                    ...(account.client2SignedP14 && account.client2SignedP14 !== 'N/A' ? [
+                                        { label: 'Client 2 Signed', value: account.client2SignedP14, key: 'client2SignedP14' },
+                                        { label: 'Client 2 Name', value: account.client2NameP14 || 'Missing', key: 'client2NameP14' },
+                                        { label: 'Client 2 Date', value: account.client2DateP14 || 'Missing', key: 'client2DateP14' },
+                                    ] : []),
+
+                                    // Page 14 - Advisor
                                     { label: 'Advisor Signed', value: account.advisorSignedP14, key: 'advisorSignedP14' },
                                     { label: 'Advisor Name', value: account.advisorNameP14, key: 'advisorNameP14' },
                                     { label: 'Advisor Date', value: account.advisorDateP14, key: 'advisorDateP14' },
@@ -1007,6 +1113,41 @@ export default function AdvisoryAgentsPage() {
                     </div>
                 )
             }
+
+            {/* Tier Editor Modal */}
+            {showTierEditor && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={handleTierEditorCancel}>
+                    <div className="bg-card border rounded-xl shadow-2xl p-6 max-w-2xl w-full mx-4" onClick={(e) => e.stopPropagation()}>
+                        <h3 className="text-xl font-bold mb-4">Edit Tiered Fee Structure</h3>
+
+                        <textarea
+                            value={tierEditorValue}
+                            onChange={(e) => setTierEditorValue(e.target.value)}
+                            className="w-full h-64 p-4 border rounded-lg font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-background"
+                            placeholder="$0 To $500,000: 1.00%&#10;$500,000 To $1,000,000: 0.85%&#10;$1,000,000 To $2,000,000: 0.75%"
+                        />
+
+                        <div className="mt-4 text-xs text-muted-foreground">
+                            Format: Each line should be: $From To $To: Percentage
+                        </div>
+
+                        <div className="flex justify-end gap-3 mt-6">
+                            <button
+                                onClick={handleTierEditorCancel}
+                                className="px-4 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleTierEditorSave}
+                                className="px-4 py-2 rounded-xl text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm"
+                            >
+                                Save Tiers
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div >
     );
 }

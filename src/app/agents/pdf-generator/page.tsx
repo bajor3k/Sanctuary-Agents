@@ -1,23 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { Upload, FileText, Loader2, CheckCircle2, XCircle } from 'lucide-react';
+import { Loader2, CheckCircle2, XCircle, FileText } from 'lucide-react';
 
 export default function PdfGeneratorPage() {
-    const [pdfFile, setPdfFile] = useState<File | null>(null);
     const [count, setCount] = useState<number>(1);
     const [isGenerating, setIsGenerating] = useState(false);
     const [result, setResult] = useState<{ success: boolean; message: string; filePaths?: string[] } | null>(null);
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file && file.type === 'application/pdf') {
-            setPdfFile(file);
-            setResult(null);
-        } else {
-            alert('Please select a valid PDF file');
-        }
-    };
+
 
     const handleGenerate = async () => {
         if (count < 1 || count > 1000) {
@@ -29,24 +20,10 @@ export default function PdfGeneratorPage() {
         setResult(null);
 
         try {
-            let pdfBase64 = null;
-
-            if (pdfFile) {
-                const reader = new FileReader();
-                await new Promise<void>((resolve, reject) => {
-                    reader.onload = () => {
-                        pdfBase64 = reader.result as string;
-                        resolve();
-                    };
-                    reader.onerror = reject;
-                    reader.readAsDataURL(pdfFile);
-                });
-            }
-
             const response = await fetch('/api/generate-pdfs', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ pdfBase64, count }),
+                body: JSON.stringify({ count }),
             });
             const data = await response.json();
             if (response.ok) {
@@ -72,33 +49,6 @@ export default function PdfGeneratorPage() {
                 </div>
 
                 <div className="space-y-6 bg-card border rounded-lg p-6">
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium">Overide Template (Optional)</label>
-                        <div className="border-2 border-dashed rounded-lg p-8 text-center hover:border-primary/50 transition-colors">
-                            <input
-                                type="file"
-                                accept="application/pdf"
-                                onChange={handleFileChange}
-                                className="hidden"
-                                id="pdf-upload"
-                            />
-                            <label htmlFor="pdf-upload" className="cursor-pointer flex flex-col items-center gap-2">
-                                {pdfFile ? (
-                                    <>
-                                        <FileText className="h-12 w-12 text-green-500" />
-                                        <span className="text-sm font-medium">{pdfFile.name}</span>
-                                        <span className="text-xs text-muted-foreground">Click to change</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Upload className="h-12 w-12 text-muted-foreground" />
-                                        <span className="text-sm font-medium">Click to upload a different blank PDF</span>
-                                        <span className="text-xs text-muted-foreground">(Otherwise default signed template will be used)</span>
-                                    </>
-                                )}
-                            </label>
-                        </div>
-                    </div>
 
                     <div className="space-y-2">
                         <label htmlFor="count" className="text-sm font-medium">Number of PDFs to Generate</label>
